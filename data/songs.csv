@@ -19,3 +19,58 @@ id,title,artist,genre,mood,energy,tempo_bpm,valence,danceability,acousticness
 18,Skyline Surge,Pulse Theory,EDM,triumphant,0.95,128,0.80,0.90,0.04
 19,Rainwater Blues,Otis Marrow,blues,sad,0.33,70,0.22,0.40,0.75
 20,Neon Cloud Nine,Starlette,k-pop,dreamy,0.70,116,0.75,0.85,0.15
+21,Golden Afternoon,Neon Echo,pop,happy,0.68,112,0.86,0.80,0.22
+22,Electric Daydream,Cassie Vale,pop,playful,0.72,120,0.79,0.83,0.15
+23,Rainy Window Seat,Paper Lanterns,lofi,relaxed,0.32,74,0.55,0.52,0.83
+24,Broken Compass,Voltline,rock,intense,0.87,150,0.42,0.60,0.08
+25,Static Anthem,Iron Willow,rock,triumphant,0.80,140,0.68,0.64,0.12
+26,Gravel Road,Ashen Kite,rock,moody,0.65,118,0.38,0.52,0.20
+27,Floating Lanterns,Orbit Bloom,ambient,peaceful,0.18,58,0.60,0.30,0.90
+28,Glacier Drift,Halcyon Field,ambient,dreamy,0.22,62,0.55,0.28,0.88
+29,Blue Hour Duet,Slow Stereo,jazz,romantic,0.42,96,0.68,0.58,0.80
+30,Late Set Wanderer,Miles Actor,jazz,melancholic,0.35,84,0.40,0.48,0.82
+31,Chrome Horizon,Neon Echo,synthwave,nostalgic,0.68,108,0.55,0.70,0.18
+32,Retrofuture Drive,Vektor Nine,synthwave,triumphant,0.80,116,0.72,0.75,0.10
+33,Paper Airplanes,Indigo Parade,indie pop,playful,0.62,118,0.78,0.74,0.42
+34,Backyard Fireflies,Willow June,indie pop,nostalgic,0.55,104,0.70,0.66,0.55
+35,Midnight Cipher,Trace Bishop,hip-hop,confident,0.80,92,0.58,0.86,0.10
+36,City Lights Freestyle,Nova Kingsley,hip-hop,energetic,0.83,98,0.65,0.87,0.07
+37,Winter Prelude,Elena Voss,classical,peaceful,0.24,68,0.45,0.20,0.96
+38,Storm Movement No.3,Julien Marchetti,classical,intense,0.78,132,0.35,0.30,0.90
+39,Backroads at Dusk,Wyatt Cole,country,nostalgic,0.44,96,0.62,0.52,0.68
+40,Porch Light Serenade,Callie Bramwell,country,romantic,0.38,88,0.66,0.48,0.72
+41,Slow Burn,Simone Reign,r&b,romantic,0.48,80,0.66,0.62,0.45
+42,Honest Hours,Devon Marlowe,r&b,sultry,0.50,78,0.60,0.65,0.38
+43,Cabin Windows,River Hale,folk,melancholic,0.28,84,0.30,0.32,0.92
+44,Mountain Letters,Sable Hearne,folk,peaceful,0.24,76,0.55,0.30,0.90
+45,Hollow Crown,Grimhold,metal,angry,0.95,172,0.18,0.42,0.02
+46,Blackout Requiem,Ferrous Wake,metal,intense,0.92,164,0.25,0.48,0.05
+47,Island Breeze,Kalico Bay,reggae,carefree,0.55,90,0.80,0.72,0.35
+48,Golden Tide,Marlow Reef,reggae,playful,0.58,94,0.78,0.74,0.32
+49,Pulse Overdrive,Pulse Theory,EDM,euphoric,0.96,130,0.82,0.92,0.03
+50,Neon Skyfall,Arclight,EDM,triumphant,0.93,126,0.78,0.90,0.05
+51,Whiskey Rain,Otis Marrow,blues,sad,0.36,72,0.25,0.42,0.72
+52,Lonesome Highway,Delta Crowe,blues,melancholic,0.30,68,0.20,0.38,0.78
+53,Starlight Rewind,Starlette,k-pop,euphoric,0.78,124,0.82,0.88,0.12
+54,Bloom Fantasy,Yuna Prism,k-pop,dreamy,0.65,110,0.75,0.80,0.20
+55,Heart on the Line,Marva Solstice,soul,romantic,0.52,86,0.68,0.62,0.40
+56,Rise and Shine,Otha James,soul,uplifting,0.60,100,0.75,0.68,0.30
+57,Groove Machine,Funk Dynasty,funk,confident,0.75,110,0.80,0.90,0.10
+58,Bassline Strut,Cocoa Vibe,funk,playful,0.72,106,0.78,0.88,0.12
+59,Rise Up Together,Voices of Halden,gospel,hopeful,0.55,90,0.80,0.55,0.65
+60,Sunday Morning Grace,The Wren Choir,gospel,uplifting,0.62,96,0.85,0.60,0.60
+61,Broken Sirens,Rust Kettle,punk,rebellious,0.90,168,0.35,0.55,0.05
+62,Static Riot,Vandal Choir,punk,angry,0.93,176,0.28,0.50,0.03
+63,Mirrorball Nights,Satin Groove,disco,euphoric,0.78,118,0.85,0.88,0.08
+64,Velvet Rollerdisco,Lush Static,disco,playful,0.74,114,0.80,0.86,0.10
+65,Sunrise Warehouse,DJ Halcyon,house,euphoric,0.82,124,0.75,0.88,0.06
+66,Deep End Groove,Mira Solace,house,hypnotic,0.70,122,0.60,0.80,0.08
+67,Subterranean Circuit,Ferro Grid,techno,intense,0.88,134,0.40,0.78,0.04
+68,Underground Signal,Vex Modular,techno,hypnotic,0.80,128,0.35,0.75,0.05
+69,Breakneck Transit,Kilo Static,drum and bass,intense,0.90,174,0.45,0.82,0.03
+70,Night Signal Rush,Echo Fracture,drum and bass,energetic,0.87,170,0.50,0.80,0.05
+71,Quiet Apartment,Nora Lindqvist,singer-songwriter,introspective,0.30,82,0.42,0.35,0.85
+72,Letters I Never Sent,Emory Vance,singer-songwriter,melancholic,0.26,78,0.30,0.30,0.90
+73,Noche de Fuego,Los Astros,latin,passionate,0.72,102,0.80,0.85,0.28
+74,Corazon Electrico,Camila Rivas,latin,euphoric,0.75,108,0.82,0.87,0.22
+75,Sunlit Rhythm,Kofi Aduba,afrobeat,joyful,0.68,112,0.80,0.84,0.30

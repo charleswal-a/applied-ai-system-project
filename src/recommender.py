@@ -48,23 +48,28 @@ class Recommender:
 
 def load_songs(csv_path: str) -> List[Dict]:
     """Load songs from a CSV file into a list of dicts."""
+    songs = []
     with open(csv_path, newline="") as f:
         reader = csv.DictReader(f)
-        return [
-            {
-                "id": int(row["id"]),
-                "title": row["title"],
-                "artist": row["artist"],
-                "genre": row["genre"],
-                "mood": row["mood"],
-                "energy": float(row["energy"]),
-                "tempo_bpm": float(row["tempo_bpm"]),
-                "valence": float(row["valence"]),
-                "danceability": float(row["danceability"]),
-                "acousticness": float(row["acousticness"]),
-            }
-            for row in reader
-        ]
+        for line_number, row in enumerate(reader, start=2):
+            try:
+                songs.append(
+                    {
+                        "id": int(row["id"]),
+                        "title": row["title"],
+                        "artist": row["artist"],
+                        "genre": row["genre"],
+                        "mood": row["mood"],
+                        "energy": float(row["energy"]),
+                        "tempo_bpm": float(row["tempo_bpm"]),
+                        "valence": float(row["valence"]),
+                        "danceability": float(row["danceability"]),
+                        "acousticness": float(row["acousticness"]),
+                    }
+                )
+            except (KeyError, ValueError) as e:
+                raise ValueError(f"Invalid song data on row {line_number} of {csv_path}: {e}") from e
+    return songs
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """Score a song against user preferences, returning (score, reasons)."""
