@@ -2,13 +2,13 @@
 
 ## 1. Model Name  
 
-**TasteMatch 1.0**
+**TasteMatch 2.0**
 
 ---
 
 ## 2. Intended Use  
 
-TasteMatch takes a listener's stated taste (favorite genre, favorite mood, target energy, and whether they like acoustic sound) and returns a ranked list of the best-matching songs from a small catalog, along with a plain-language reason for each pick. It assumes the user can describe their taste as one favorite genre, one favorite mood, and a single energy level. The system will then provide the top picks from the song data that best match the user's described taste.
+TasteMatch takes a listener's stated taste (favorite genre, favorite mood, target energy, and whether they like acoustic sound) and returns a ranked list of the best-matching songs from a small catalog, along with a plain-language reason for each pick. As of 2.0, that taste doesn't have to arrive as a structured profile — the user can describe what they want in a sentence, and an agentic layer turns it into the same genre/mood/energy/acoustic shape before scoring. It still assumes the user's taste can be reduced to one favorite genre, one favorite mood, and a single energy level; if that description doesn't line up well with the catalog, the system will ask one follow-up question before handing back its final picks.
 
 ---
 
@@ -20,44 +20,52 @@ To score a song, the model checks four things and gives credit for each: does th
 
 Starting from the empty starter code, I implemented the CSV loading, wrote the four-part weighted scoring formula above, added logic to rank all songs and keep only the top matches, and cleaned up the terminal output so it shows the user's profile, a numbered list of recommendations, and the specific reasons behind each score.
 
+For 2.0, I added an agentic layer (`src/agent.py`) in front of that same scorer. A Groq-hosted model (`llama-3.3-70b-versatile`) turns a free-text request like "chill music for studying" into the same genre/mood/energy/acoustic profile the scorer already expects, a plain-Python guardrail check compares that profile against what's actually in the catalog before anything is scored, and after scoring, the model reviews the warnings and top results to decide whether to show them as-is or ask one clarifying question first. If the API key is missing or a call fails, the app falls back to asking for genre/mood/energy/acoustic directly — the deterministic scorer itself never changed, and it never depends on the AI layer being available.
+
 ---
 
 ## 4. Data  
 
-The catalog has 20 songs. It started with 10 songs across 7 genres (pop, lofi, rock, ambient, jazz, synthwave, indie pop) and 6 moods (happy, chill, intense, relaxed, moody, focused). I added 10 more songs to cover genres and moods that were missing, including hip-hop, classical, country, r&b, folk, metal, reggae, EDM, blues, and k-pop, plus moods like energetic, peaceful, nostalgic, romantic, melancholic, angry, playful, triumphant, sad, and dreamy.
+The catalog has grown to 75 songs across 28 genres and 27 moods. It started with 10 songs across 7 genres (pop, lofi, rock, ambient, jazz, synthwave, indie pop) and 6 moods, then grew to 20 songs covering 17 genres, and most recently grew again to fill most existing genres out to 3-4 songs each and add new ones — soul, funk, gospel, punk, disco, house, techno, drum and bass, singer-songwriter, latin, and afrobeat.
 
-Even with that addition, the dataset is missing a lot of what actually shapes musical taste: no lyrics or language, no artist popularity or era, no actual listening history, and most genres still only have one song each, so the model can't show much variety within a genre.
+Even at 75 songs, the dataset is missing a lot of what actually shapes musical taste: no lyrics or language, no artist popularity or era, no actual listening history. One genre (afrobeat) still has just a single song, and ten others (soul, funk, gospel, punk, disco, house, techno, drum and bass, singer-songwriter, latin) have only two, so those genres still can't show much variety within themselves.
 
 ---
 
 ## 5. Strengths  
 
-The model gives sensible results for tastes that are well represented in the catalog. For example, a "lofi, chill" profile pulled back two very close, high-scoring matches (Midnight Coding and Library Rain) followed by reasonably ranked partial matches — the ordering matched what I'd expect a person to pick by hand. The energy-closeness scoring also behaves the way it should: songs near the target energy score higher and songs far from it score lower, instead of a hard match/no-match cutoff. In the simple pop/happy baseline test, the top result matched the user's profile on every single feature, which is exactly the intended behavior.
+The model still gives sensible results for tastes that are well represented in the catalog. A "chill, lofi" request pulls back Library Rain (0.95) and Midnight Coding (0.93) as its top two picks, in the order I'd expect a person to pick by hand, and the energy-closeness scoring keeps behaving the way it should: songs near the target energy score higher and songs far from it score lower, instead of a hard match/no-match cutoff.
+
+The bigger strength in 2.0 is what the agentic layer catches before a result ever gets shown. Asking for "angry metal music, but purely acoustic instruments only" gets flagged immediately — the guardrail notices metal songs in the catalog average 0.03 acousticness, and the model asks the user to prioritize instead of silently zeroing out the acoustic score. Asking for a genre the catalog doesn't have (vaporwave) gets caught the same way, with the model suggesting real alternatives (synthwave, k-pop) instead of returning a confident-looking but wrong top result.
 
 ---
 
 ## 6. Limitations and Bias 
 
-The model only looks at tags and numbers — it has no idea about lyrics, artist popularity, or what the user has actually listened to before. Genres with only one song in the catalog (like k-pop or classical) will always get weak recommendations, because there's nothing else to choose from even if that one song is a poor match on mood or energy. Genre and mood matching is all-or-nothing text matching, so a genre typed slightly differently, or one that isn't in the catalog at all (like "electronic"), gets zero credit for that entire 35% of the score — and closely related genres like "pop" and "indie pop" are treated as completely unrelated. When a user's preferences contradict each other (for example, wanting a genre that's never acoustic but also saying they like acoustic songs), the model just quietly drops the acoustic score to zero instead of flagging the conflict. Missing profile fields are also scored as zero rather than being skipped, so an incomplete profile is capped at a lower score even if everything it does specify is a perfect match.
+The scorer itself hasn't changed: it only looks at tags and numbers, has no idea about lyrics, artist popularity, or what the user has actually listened to before, and genre/mood matching is still all-or-nothing text matching — a genre typed slightly differently, or one that isn't in the catalog at all (like "electronic"), gets zero credit for that entire 35% of the score, and closely related genres like "pop" and "indie pop" are still treated as completely unrelated. Genres with only one or two songs in the catalog (afrobeat, and the ten genres added at just two songs each) will still get weak recommendations no matter how good the match is, because there's nothing else to choose from.
+
+What 2.0 changes is what happens with a contradiction before scoring: instead of quietly dropping the acoustic score to zero, the guardrail flags the tension and the model asks the user to prioritize. But it never resolves that tension on its own — it always hands the decision back to the user, so a fully unattended run still stalls on a genuinely contradictory profile. The agentic layer also introduces its own new failure mode: the parser doesn't always land on an exact catalog tag ("just play something good" produced genre=indie instead of the catalog's actual indie pop), and a near-miss like that gets treated exactly the same as a genre that isn't in the catalog at all, rather than being matched to the closest real tag.
 
 ---
 
 ## 7. Evaluation  
 
-I tested five profiles: a well-supported baseline (pop, happy), a strong double match (lofi, chill), a genre that doesn't exist in the catalog (electronic), an internally contradictory profile (metal, angry, but also wanting acoustic), a profile with missing fields (only genre and mood given), and a profile for a genre with just one song in the catalog (k-pop). For each, I checked whether the top recommendation made intuitive sense, whether the listed reasons matched the score, and whether anything broke or produced a nonsense result.
+Testing now happens on two tracks. `pytest` covers the deterministic logic automatically — 2 tests on the scorer itself, plus 5 on the guardrail check (missing genre, missing mood, out-of-range energy, an acoustic/genre contradiction, and a clean profile with no warnings) — none of which need a network call or an API key. On top of that, I ran five live sessions through the full agentic pipeline against the current 75-song catalog, recorded as transcripts in the README: a straightforward request, a genre the catalog doesn't have, a genuinely contradictory request, a sparse-genre request, and a vague one-line request with almost no information to go on.
 
-The most surprising result was the "electronic" test — even though genre matching completely failed, the top result still scored a fairly confident-looking 0.63 from mood, energy, and acoustic matching alone. That could mislead a user into thinking it's a strong overall match when the genre isn't right at all. I didn't run any numeric metrics, just manual comparisons of the five experiment outputs recorded in the README.
+The most interesting result was the vague request ("just play something good") — with almost nothing to go on, the parser guessed genre=indie, which is close to but not the same as the catalog's actual indie pop tag, so a genre that's actually a near-match still got treated as a total miss. That's the same class of problem as the old "electronic" test used to show, just introduced by the parsing step now instead of by the user typing something wrong. I didn't run any numeric metrics — just pytest's pass/fail plus manual review of each transcript.
 
 ---
 
 ## 8. Future Work  
 
-Next steps would include letting genre and mood scoring give partial credit for closely related tags instead of exact-match-only, and folding valence in as a real scored feature instead of just an unused tie-breaker. I'd also want the explanations to mention what didn't match, not just what did, so users understand a low score's cause. Adding more variety to the top-k results (instead of several very similar songs) and supporting more than one favorite genre or mood would make the model feel more realistic.
+Next steps would still include letting genre and mood scoring give partial credit for closely related tags instead of exact-match-only, and folding valence in as a real scored feature instead of just an unused tie-breaker. I'd also want the explanations to mention what didn't match, not just what did, so users understand a low score's cause. Adding more variety to the top-k results (instead of several very similar songs) and supporting more than one favorite genre or mood would make the model feel more realistic.
+
+On the agentic side, the clearest next step is matching a near-miss genre guess (like indie) to the closest real catalog tag (indie pop) instead of treating it as a total miss. I'd also want a way to let the model propose a resolution to a simple contradiction when the user doesn't answer the follow-up question, instead of the pipeline having nowhere to go. And since the guardrail already knows exactly which requests the catalog can't satisfy, logging how often each warning type fires would be a cheap way to see which genres and moods actually need more songs next.
 
 ---
 
 ## 9. Personal Reflection  
 
-During this experience, I learned the importance of the data that you pick from the data set to use in the recommendation algorithm. The testing showed me how important some featurest (like genre and energy) were to a more accurate recommendation. Meanwhile, there were other features (like valence) that did not contribute as much are were not worth integrating into this simple recommendation system. This changed the way I thought about music recommendation because it made me think about how much data can be extracted and used from a song. Real-life recommendation systems must use hundreds of data values to be as accurate as possible with such a large song database.
+During the original project, I learned the importance of the data that you pick from the data set to use in the recommendation algorithm. My biggest learning moment during this project came from testing the music recommender using different user profiles. It showed me weaknesses in the algorithm I picked, and how the weights/features I chose affected the returned songs. AI tools were a big help in giving me feedback on the algorithm, as well as implementing the algorithm in an efficient way. I was surprised that the simple 4 values I chose would give an effective recommendation most of the time. In the future, I would've extended this project by using more features and incorporating way more songs in the dataset.
 
-My biggest learning moment during this project came from testing the music recommender using different user profiles. It showed me weaknesses in the algorithm I picked, and how the weights/features I chose affected the returned songs. AI tools were a big help in giving me feedback on the algorithm, as well as implementing the algorithm in an efficient way. I was surprised that the simple 4 values I chose would give an effective recommendation most of the time. In the future, I would've extended this project by using more features and incorporating way more songs in the dataset.
+In the final project, I got to use Claude Code to enhance this project and add the agentic layer that can create a user profile from the user's answer to a single question. I got to collaborate and work with Claude by prompting to generate code, troubleshoot errors, and create tests for the music recommendation model. One example of a helpful suggestion that AI gave was using the universal json_object when getting a result from the GROQ API. This ensured that the outputs are relaibly readable and ready to by parsed by the program. A flawed suggestion that was given by Claude was to build the entire agentic layer using Anthropic's Claude API when I was unable to obtain a free key. I was able to obtain a GROQ API key instead and prompt the system to alter the code to account for this fundamental change.
