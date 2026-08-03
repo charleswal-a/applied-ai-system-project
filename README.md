@@ -2,9 +2,9 @@
 
 ## Project Summary
 
-This project is a simple content-based music recommender. Each song in the catalog (`data/songs.csv`) is described by a set of audio and tag features — genre, mood, energy, tempo, valence, danceability, and acousticness. A `UserProfile` captures a listener's taste as a favorite genre, favorite mood, target energy level, and a preference for acoustic sound. The `Recommender` scores every song by comparing it to the user's profile, then returns the top-k highest-scoring songs along with an explanation of why each one was picked.
+This project is a simple content-based music recommender. Each song in the catalog (`data/songs.csv`) is described by a set of audio and tag features — genre, mood, energy, tempo, valence, danceability, and acousticness. A `UserProfile` captures a listener's taste as a favorite genre, favorite mood, target energy level, and a preference for acoustic sound. The `Recommender` scores every song by comparing it to the user's profile, then returns the top-k highest-scoring songs along with an explanation of why each one was picked. Beyond the original project, an agentic layer has been added to turn a typed request into a user taste profile so songs can be recommended.
 
-This matters because the same weighted-sum-of-features approach powers a lot of real recommenders, and building one by hand makes its blind spots visible instead of hidden behind a black box. On top of the deterministic scorer, the project also adds an agentic layer (`src/agent.py`) that turns a free-text request into a taste profile, checks it against the catalog for contradictions, and reviews the results before showing them — see Architecture Overview below.
+This matters because the same weighted-sum-of-features approach powers a lot of real recommenders, and building one by hand makes its blind spots visible instead of hidden behind a black box. On top of the deterministic scorer, the project also adds an agentic layer (`src/agent.py`) that turns a free-text request into a taste profile, checks it against the catalog for contradictions, and reviews the results before showing them.
 
 ---
 
@@ -153,9 +153,9 @@ You can add more tests in `tests/test_recommender.py`.
 
 ## Sample Interactions
 
-These are real transcripts from `python -m src.main` with `GROQ_API_KEY` set, run against the current 75-song catalog.
+These are real transcripts from `python -m src.main` with `GROQ_API_KEY` set, run against the current 75-song catalog — starting with a straightforward request, then three edge cases that each exercise the guardrail + clarify loop for a different reason: a genuine contradiction, a mood gap, and a near-miss genre guess.
 
-**Example 1 — a straightforward request, satisfied on the first pass:**
+**1. Straightforward request — satisfied on the first pass**
 
 ```
 Describe what you want to listen to: something chill for late night studying, not too fast
@@ -173,7 +173,7 @@ Top Recommendations
    Because: matches your favorite genre (lofi), matches your favorite mood (chill), matches your acoustic preference
 ```
 
-**Example 2 — a genre the catalog doesn't have, triggering a guardrail warning and a clarifying question, then a refined result:**
+**2. Genre the catalog doesn't have — guardrail warning, clarifying question, refined result**
 
 ```
 Describe what you want to listen to: vaporwave, dreamy, high energy, no acoustic instruments
@@ -201,13 +201,8 @@ Top Recommendations
    Because: matches your favorite genre (synthwave), close to your target energy (0.75), matches your acoustic preference
 ```
 
----
+**3. Contradictory acoustic preference**
 
-## Experiments You Tried
-
-Three tests of the agentic mode against the current 75-song catalog, each run through `python -m src.main`. All three needed a follow-up question, for three different reasons — a genuine contradiction, a mood gap, and a near-miss genre guess.
-
-Experiment 1: Contradictory acoustic preference
 ```
 Describe what you want to listen to: I want angry metal music, but purely acoustic instruments only
 
@@ -238,7 +233,8 @@ Top Recommendations
 Would you like to prioritize acoustic sound or metal genre in your recommendations?
 ```
 
-Experiment 2: Sparse catalog genre
+**4. Sparse catalog genre**
+
 ```
 Describe what you want to listen to: upbeat afrobeat vibes for a summer party
 
@@ -269,7 +265,8 @@ Top Recommendations
 Would you like to relax your mood preference to find more songs that match your favorite afrobeat genre and high energy level?
 ```
 
-Experiment 3: Vague, minimal-info request
+**5. Vague, minimal-info request**
+
 ```
 Describe what you want to listen to: just play something good
 
@@ -300,31 +297,40 @@ Top Recommendations
 Are you open to listening to music from other genres that match your preferred mood and energy?
 ```
 
-Worth noting on Experiment 3: given almost nothing to go on, the parser guessed `genre=indie` — close to, but not the same as, the catalog's actual `indie pop` tag. That guess still routes into the same guardrail instead of silently scoring zero, which is the exact failure mode described in Limitations and Risks below.
-
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or demo video link here -->
+Worth noting on Example 5: given almost nothing to go on, the parser guessed `genre=indie`, which is close to, but not the same as, the catalog's actual `indie pop` tag. That guess still routes into the same guardrail instead of silently scoring zero, which is the exact failure mode described in the Testing Summary below.
 
 ---
 
 ## Design Decisions
 
-- **Weighted-sum scoring over a black-box model**: a simple linear combination (genre 0.35, energy 0.30, mood 0.25, acousticness 0.10) keeps every recommendation explainable in plain language — the trade-off is that it can't learn nuance like genre adjacency or a user's actual listening history.
-- **Deterministic guardrails instead of asking the LLM to catch catalog gaps**: `check_catalog_guardrails()` is plain Python, so it's instant, free, unit-testable with no network call, and always catches the same class of problem (missing genre/mood, out-of-range energy, acoustic-vs-genre tension). The LLM is reserved for where natural language is actually needed — parsing free text, writing the summary, deciding whether to ask a follow-up.
+- **Weighted-sum scoring over a black-box model**: a simple linear combination (genre 0.35, energy 0.30, mood 0.25, acousticness 0.10) keeps every recommendation explainable in plain language. The trade-off is that it can't learn nuance like genre adjacency or a user's actual listening history.
+- **Deterministic guardrails instead of asking the LLM to catch catalog gaps**: `check_catalog_guardrails()` is plain Python, so it's instant, free, unit-testable with no network call, and always catches the same class of problem (missing genre/mood, out-of-range energy, acoustic-vs-genre tension). The LLM is reserved for where natural language is actually needed like parsing free text, writing the summary, deciding whether to ask a follow-up.
 - **Groq's JSON mode over strict schema enforcement**: Groq's `json_schema` structured-output mode isn't guaranteed on every hosted model, so the pipeline uses the more broadly-supported `json_object` mode (valid JSON, not a guaranteed shape) and validates the required fields and types itself. The trade-off is a bit of hand-rolled validation in exchange for not being locked to one specific model.
 - **A bounded 2-round clarify loop**: the agent can ask at most one follow-up question before it has to present something, so a CLI user is never stuck in an endless back-and-forth if the model keeps finding new things to ask about.
-- **Fail open, not closed**: if `GROQ_API_KEY` is missing or a Groq call errors, the app logs it and falls back to manual `input()` prompts instead of crashing — you always get scored recommendations, with or without the AI layer working.
+- **Fail open, not closed**: if `GROQ_API_KEY` is missing or a Groq call errors, the app logs it and falls back to manual `input()` prompts instead of crashing. You always get scored recommendations, with or without the AI layer working.
 
 ---
 
-## Limitations and Risks
+## Testing Summary
 
-The model only looks at tags and numbers. It doesn't know about lyrics, popularity, or past listening habits. Genres with just one song (like k-pop or classical) always get weak matches since there's nothing else to pick from. Genre and mood have to match exactly, so a typo or an unlisted genre gets zero credit, and similar genres like "pop" and "indie pop" count as totally unrelated. If a user's preferences contradict each other, the model just silently drops that part of the score instead of flagging it. Missing profile fields also score as zero, so an incomplete profile can't reach a high score even with a perfect partial match.
+### What worked
+
+- `pytest` passes all 7 tests (2 recommender, 5 guardrail) with no network call or API key needed, and the guardrail + clarify loop fired for the right reason across all 3 experiments instead of silently guessing.
+- The fail-open fallback was verified by unsetting `GROQ_API_KEY`: the app logged the error and dropped into manual `input()` prompts instead of crashing.
+
+### What didn't
+
+- The parser doesn't always land on an exact catalog tag (`indie` vs. the catalog's `indie pop`), so a near-miss genre gets treated the same as one that isn't in the catalog at all, and the deterministic scorer underneath still can't relate similar tags to each other.
+- Contradictions get flagged but never resolved automatically. The system always hands the decision back to the user and thin genres (afrobeat, gospel, disco) still cap out at a handful of results.
+
+### What we learned
+
+- Splitting the deterministic guardrail from the LLM steps made testing fast and key-free, and giving the model structured warnings (instead of raw scores) made its clarifying questions specific rather than generic.
+- Growing the catalog from 20 to 75 songs helped most genres, but it's a partial fix — a genre with one song stays weak until the catalog fills it in directly.
 
 ---
 
 ## Reflection
-
-Read and complete `model_card.md`:
 
 [**Model Card**](model_card.md)
 

@@ -1,0 +1,60 @@
+%%{init: {'flowchart': {'htmlLabels': true}} }%%
+flowchart TD
+    subgraph Data["Data"]
+        CSV["data/songs.csv\n(75 songs)"]
+    end
+
+    subgraph Main["src/main.py — orchestration"]
+        Start(["main()"])
+        Input["_safe_input()\nfree-text request"]
+        ManualProfile["_manual_profile()\nmanual input() fallback"]
+        Print["_print_results()"]
+        Log["_setup_logging()\nlogs/session.log"]
+    end
+
+    subgraph Agent["src/agent.py — agentic layer (Groq llama-3.3-70b-versatile)"]
+        Client["get_client()\nreads GROQ_API_KEY"]
+        Parse["parse_profile_from_text()"]
+        Guard["check_catalog_guardrails()\nplain Python, no LLM"]
+        Review["review_and_summarize()"]
+        Refine["refine_profile()"]
+    end
+
+    subgraph Recommender["src/recommender.py — deterministic scorer"]
+        Load["load_songs()"]
+        Score["score_song()"]
+        Recommend["recommend_songs()"]
+    end
+
+    Start --> Log
+    Start --> Client
+    Client -- "key present" --> Input
+    Client -- "GROQ_API_KEY missing\nor Groq call fails" --> ManualProfile
+    Input --> Parse
+    CSV --> Load
+    Load --> Recommend
+    Parse --> Profile["{genre, mood, energy, likes_acoustic}"]
+    ManualProfile --> Profile
+    Profile --> Guard
+    Guard -- warnings --> Recommend
+    Recommend --> Review
+    Review -- satisfied --> Print
+    Review -- needs_clarification --> Question["ask one clarifying question\n(max 2 rounds)"]
+    Question --> Refine
+    Refine --> Profile
+
+    subgraph Tests["tests/"]
+        TestAgent["test_agent.py\nguardrail unit tests"]
+        TestRec["test_recommender.py\nscoring unit tests"]
+    end
+
+    TestAgent -.-> Guard
+    TestRec -.-> Score
+    TestRec -.-> Recommend
+
+    classDef llm fill:#f9d5e5,stroke:#c2185b;
+    classDef deterministic fill:#d6eaf8,stroke:#1a5276;
+    classDef data fill:#eafaf1,stroke:#1e8449;
+    class Parse,Review,Refine,Client llm;
+    class Guard,Score,Recommend,Load deterministic;
+    class CSV data;
